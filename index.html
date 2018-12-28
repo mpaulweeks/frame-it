@@ -107,19 +107,17 @@
     const frames = [
       {
         source: 'frames/dark.png',
-        name: 'Royal Dark',
+        name: 'Dark',
         top: 0.2,
-        bottom: 0.73,
+        bottom: 0.74,
         left: 0.33,
         right: 0.66,
       },
       {
-        source: 'frames/dark.png',
-        name: 'Royal ???',
-        top: 0.2,
-        bottom: 0.73,
-        left: 0.33,
-        right: 0.66,
+        source: 'frames/blue.png',
+        name: 'Blue',
+        top: 0.28,
+        bottom: 0.85,
       },
     ];
     frames.forEach((fd, fid) => {
@@ -135,15 +133,18 @@
       const windowWidth = document.body.clientWidth - 100;
       const canvasWidth = Math.min(windowWidth, imgFrame.width);
       const canvasHeight = imgFrame.height * (canvasWidth / imgFrame.width);
-      console.log(windowWidth, imgFrame.width, imgFrame.height, canvasWidth, canvasHeight)
 
       elmCanvas.width = canvasWidth;
       elmCanvas.height = canvasHeight;
 
-      ctx.drawImage(imgFrame, 0, 0, canvasWidth, canvasHeight);
+      const innerTop = (canvasHeight * currentFrame.top);
+      const innerBottom = (canvasHeight * currentFrame.bottom);
+      const innerHeight = innerBottom - innerTop;
+      const innerWidth = imgUpload.width * (innerHeight / imgUpload.height);
+      const innerLeft = (canvasWidth / 2) - (innerWidth / 2);
 
-      const center = elmCanvas.width / 2;
-      // todo draw imgUpload
+      ctx.drawImage(imgUpload, innerLeft, innerTop, innerWidth, innerHeight);
+      ctx.drawImage(imgFrame, 0, 0, canvasWidth, canvasHeight);
     }
     imgUpload.onload = paint;
     imgFrame.onload = paint;
@@ -168,7 +169,7 @@
     window.addEventListener("resize", paint);
 
     // default image and frame
-    imgUpload.src = 'example/wowee.png';
+    imgUpload.src = 'example/joseph.jpg';
     loadFrame(0);
 
   </script>
