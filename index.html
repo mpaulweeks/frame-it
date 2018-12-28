@@ -1,0 +1,176 @@
+<html>
+<head>
+  <title>Frame-It!</title>
+  <link rel="shortcut icon" href="favicon.png" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    html, body {
+      width: 100%;
+      margin: 0 auto;
+    }
+    input, button, select {
+      border: 1px solid black;
+    }
+    .row {
+      width: 100%;
+      padding: 5px;
+      display: flex;
+      flex-direction: row;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .column {
+      padding: 0px 10px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+    .input-container {
+      padding-bottom: 3px;
+    }
+    .title {
+      font-size: 24pt;
+    }
+
+    #save-button {
+      font-size: 20px;
+      cursor: pointer;
+      color: black;
+      background-color: white;
+    }
+    #save-button:hover {
+      color: white;
+      background-color: black;
+    }
+    #download-link {
+      display: none;
+    }
+
+    #canvas {
+      margin: 0px auto;
+    }
+    @media (max-width: 400px){
+      .column {
+        text-align: center;
+        width: 100%;
+        padding-bottom: 10px;
+      }
+    }
+  </style>
+<body>
+  <div class="row">
+    <div class="title">
+      Frame-It!
+    </div>
+  </div>
+
+  <!-- interactive panel -->
+  <div class="row">
+    <div class="column">
+      <div>
+        <select id="frame-select">
+          <!-- filled via JS -->
+        </select>
+      </div>
+    </div>
+    <div class="column">
+      <div>
+        <input id="file-upload" type="file"/>
+      </div>
+    </div>
+    <div class="column">
+      <div>
+        <button id="save-button">Save Image</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- canvas -->
+  <div class="row">
+    <canvas id="canvas"></canvas>
+  </div>
+
+  <!-- hidden download link -->
+  <a id="download-link" download="tombstone.png"></a>
+
+  <script>
+
+    const elmFrames = document.getElementById('frame-select');
+    const elmUpload = document.getElementById('file-upload');
+    const elmSaveButton = document.getElementById('save-button');
+    const elmSaveLink = document.getElementById("download-link");
+    const elmCanvas = document.getElementById("canvas");
+    const ctx = elmCanvas.getContext("2d");
+    const imgFrame = new Image();
+    const imgUpload = new Image();
+
+    const frames = [
+      {
+        source: 'frames/dark.png',
+        name: 'Royal Dark',
+        top: 0.2,
+        bottom: 0.73,
+        left: 0.33,
+        right: 0.66,
+      },
+      {
+        source: 'frames/dark.png',
+        name: 'Royal ???',
+        top: 0.2,
+        bottom: 0.73,
+        left: 0.33,
+        right: 0.66,
+      },
+    ];
+    frames.forEach((fd, fid) => {
+      elmFrames.innerHTML += `<option value="${fid}">${fd.name}</option>`;
+    });
+    let currentFrame = null;
+
+    function loadFrame(frameId){
+      currentFrame = frames[frameId];
+      imgFrame.src = currentFrame.source;
+    }
+    function paint() {
+      const windowWidth = document.body.clientWidth - 100;
+      const canvasWidth = Math.min(windowWidth, imgFrame.width);
+      const canvasHeight = imgFrame.height * (canvasWidth / imgFrame.width);
+      console.log(windowWidth, imgFrame.width, imgFrame.height, canvasWidth, canvasHeight)
+
+      elmCanvas.width = canvasWidth;
+      elmCanvas.height = canvasHeight;
+
+      ctx.drawImage(imgFrame, 0, 0, canvasWidth, canvasHeight);
+
+      const center = elmCanvas.width / 2;
+      // todo draw imgUpload
+    }
+    imgUpload.onload = paint;
+    imgFrame.onload = paint;
+
+    elmFrames.addEventListener('change', () => {
+      const frameId = parseFloat(elmFrames.value);
+      loadFrame(frameId);
+    });
+    elmUpload.addEventListener('change', e1 => {
+      const reader = new FileReader;
+      reader.onload = e2 => {
+        const source = e2.target.result;
+        imgUpload.src = source;
+      };
+      reader.readAsDataURL(e1.target.files[0]);
+    }, false);
+    elmSaveButton.addEventListener('click', () => {
+      const dt = elmCanvas.toDataURL("image/png");
+      elmSaveLink.href = dt;
+      elmSaveLink.click();
+    });
+    window.addEventListener("resize", paint);
+
+    // default image and frame
+    imgUpload.src = 'example/wowee.png';
+    loadFrame(0);
+
+  </script>
+</body>
+</html>
