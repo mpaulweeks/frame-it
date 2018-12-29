@@ -11,6 +11,12 @@
     input, button, select {
       border: 1px solid black;
     }
+    button, select {
+      font-size: 20px;
+    }
+    input {
+      width: 100px;
+    }
     .row {
       width: 100%;
       padding: 5px;
@@ -67,13 +73,15 @@
   <!-- interactive panel -->
   <div class="row">
     <div class="column">
+      <div> Select Background </div>
       <div>
-        <select id="frame-select">
+        <select id="background-select">
           <!-- filled via JS -->
         </select>
       </div>
     </div>
     <div class="column">
+      <div> Upload Image </div>
       <div>
         <input id="file-upload" type="file"/>
       </div>
@@ -95,63 +103,137 @@
 
   <script>
 
-    const elmFrames = document.getElementById('frame-select');
+    const elmBackgrounds = document.getElementById('background-select');
     const elmUpload = document.getElementById('file-upload');
     const elmSaveButton = document.getElementById('save-button');
     const elmSaveLink = document.getElementById("download-link");
     const elmCanvas = document.getElementById("canvas");
     const ctx = elmCanvas.getContext("2d");
-    const imgFrame = new Image();
+    const imgBackground = new Image();
     const imgUpload = new Image();
 
-    const frames = [
+    const backgrounds = [
       {
-        source: 'frames/dark.png',
+        source: 'background/dark.png',
         name: 'Dark',
-        top: 0.2,
-        bottom: 0.74,
-        left: 0.33,
-        right: 0.66,
       },
       {
-        source: 'frames/blue.png',
-        name: 'Blue',
-        top: 0.28,
-        bottom: 0.85,
+        source: 'background/clouds.jpg',
+        name: 'Clouds',
       },
     ];
-    frames.forEach((fd, fid) => {
-      elmFrames.innerHTML += `<option value="${fid}">${fd.name}</option>`;
+    backgrounds.forEach((bg, bid) => {
+      elmBackgrounds.innerHTML += `<option value="${bid}">${bg.name}</option>`;
     });
-    let currentFrame = null;
+    let currentBackground = null;
 
-    function loadFrame(frameId){
-      currentFrame = frames[frameId];
-      imgFrame.src = currentFrame.source;
+    const frameParts = [
+      'bottom_left',
+      'bottom_right',
+      'middle_left',
+      'top_left',
+      'top_right',
+      'bottom_middle',
+      'filler_bottom',
+      'filler_left',
+      'filler_right',
+      'filler_top',
+      'middle_right',
+      'top_middle',
+    ].reduce((obj, name) => {
+      const img = new Image();
+      img.onload = paint;
+      img.src = `frames/${name}.png`;
+      obj[name] = img;
+      return obj;
+    }, {});
+
+
+    const frameSize = 0.5;
+    function loadBackground(backgroundId){
+      currentFrame = backgrounds[backgroundId];
+      imgBackground.src = currentFrame.source;
+    }
+    function paintFrame(frameImg, x, y){
+      const width = frameImg.width * frameSize;
+      const height = frameImg.height * frameSize;
+      ctx.drawImage(
+        frameImg,
+        x - (width / 2),
+        y - (height / 2),
+        width,
+        height
+      );
     }
     function paint() {
-      const windowWidth = document.body.clientWidth - 100;
-      const canvasWidth = Math.min(windowWidth, imgFrame.width);
-      const canvasHeight = imgFrame.height * (canvasWidth / imgFrame.width);
+      if (!frameParts.filler_top.width){
+        return;
+      }
 
+      const fillerSize = frameParts.filler_top.width * frameSize;
+      const bufferPage = 50;
+      const bufferBackground = fillerSize * 10;
+
+      // set bg
+      const windowWidth = document.body.clientWidth - bufferPage;
+      const canvasWidth = Math.min(windowWidth, imgBackground.width);
+      const canvasHeight = imgBackground.height * (canvasWidth / imgBackground.width);
       elmCanvas.width = canvasWidth;
       elmCanvas.height = canvasHeight;
+      ctx.drawImage(imgBackground, 0, 0, canvasWidth, canvasHeight);
 
-      const innerTop = (canvasHeight * currentFrame.top);
-      const innerBottom = (canvasHeight * currentFrame.bottom);
-      const innerHeight = innerBottom - innerTop;
-      const innerWidth = imgUpload.width * (innerHeight / imgUpload.height);
-      const innerLeft = (canvasWidth / 2) - (innerWidth / 2);
+      // set uploaded image
+      let uploadHeight = Math.min(canvasHeight - bufferBackground, imgUpload.height);
+      let uploadWidth = imgUpload.width * (uploadHeight / imgUpload.height);
+      if (uploadWidth > canvasWidth - bufferBackground) {
+        uploadWidth = canvasWidth - bufferBackground;
+        uploadHeight = imgUpload.height * (uploadWidth / imgUpload.width);
+      }
+      const borderTop = (canvasHeight / 2) - (uploadHeight / 2);
+      const borderBottom = borderTop + uploadHeight;
+      const borderCenterVertical = borderTop + (uploadHeight / 2);
+      const borderLeft = (canvasWidth / 2) - (uploadWidth / 2);
+      const borderRight = borderLeft + uploadWidth;
+      const borderCenterHorizontal = borderLeft + (uploadWidth / 2);
+      ctx.drawImage(
+        imgUpload,
+        borderLeft,
+        borderTop,
+        uploadWidth,
+        uploadHeight
+      );
 
-      ctx.drawImage(imgUpload, innerLeft, innerTop, innerWidth, innerHeight);
-      ctx.drawImage(imgFrame, 0, 0, canvasWidth, canvasHeight);
+      // frame filler
+      if (frameParts.filler_top.width){
+        const fillerSize = frameParts.filler_top.width * frameSize;
+        for (let x = borderLeft; x < borderRight; x += fillerSize){
+          paintFrame(frameParts.filler_top, x, borderTop);
+          paintFrame(frameParts.filler_bottom, x, borderBottom);
+        }
+        for (let y = borderTop; y < borderBottom; y += fillerSize){
+          paintFrame(frameParts.filler_left, borderLeft, y);
+          paintFrame(frameParts.filler_right, borderRight, y);
+        }
+      }
+
+      // frame sides
+      paintFrame(frameParts.middle_left, borderLeft, borderCenterVertical);
+      paintFrame(frameParts.middle_right, borderRight, borderCenterVertical);
+      paintFrame(frameParts.top_middle, borderCenterHorizontal, borderTop);
+      paintFrame(frameParts.bottom_middle, borderCenterHorizontal, borderBottom);
+
+      // frame corners
+      paintFrame(frameParts.top_left, borderLeft, borderTop);
+      paintFrame(frameParts.top_right, borderRight, borderTop);
+      paintFrame(frameParts.bottom_left, borderLeft, borderBottom);
+      paintFrame(frameParts.bottom_right, borderRight, borderBottom);
     }
     imgUpload.onload = paint;
-    imgFrame.onload = paint;
+    imgBackground.onload = paint;
 
-    elmFrames.addEventListener('change', () => {
-      const frameId = parseFloat(elmFrames.value);
-      loadFrame(frameId);
+    elmBackgrounds.addEventListener('change', () => {
+      const backgroundId = parseFloat(elmBackgrounds.value);
+      loadBackground(backgroundId);
     });
     elmUpload.addEventListener('change', e1 => {
       const reader = new FileReader;
@@ -170,7 +252,7 @@
 
     // default image and frame
     imgUpload.src = 'example/joseph.jpg';
-    loadFrame(0);
+    loadBackground(0);
 
   </script>
 </body>
