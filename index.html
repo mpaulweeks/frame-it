@@ -7,7 +7,7 @@
     html, body {
       width: 100%;
       margin: 0 auto;
-      font-size: 20px;
+      font-size: 18px;
     }
     button, select {
       border: 1px solid black;
@@ -27,6 +27,10 @@
     .row {
       width: 100%;
       padding: 5px;
+      margin: 0.5em 0px;
+      text-align: center;
+    }
+    .flex {
       display: flex;
       flex-direction: row;
       flex-wrap: wrap;
@@ -39,7 +43,10 @@
       justify-content: center;
     }
     .title {
-      font-size: 24pt;
+      font-size: 1.5rem;
+    }
+    .author {
+      font-size: 0.8rem;
     }
 
     #download-link {
@@ -58,14 +65,17 @@
     }
   </style>
 <body>
-  <div class="row">
-    <div class="title">
-      Frame-It!
-    </div>
+  <div class="row title">
+    Frame-It!
+  </div>
+  <div class="row author">
+    created by
+    <a href="https://twitter.com/mpaulweeks">@mpaulweeks</a>
+    with help from Amy Xu
   </div>
 
   <!-- interactive panel -->
-  <div class="row">
+  <div class="row flex">
     <div class="column">
       <div>
         <button id="upload-feature-button">Upload Image</button>
@@ -74,8 +84,14 @@
     </div>
     <div class="column">
       <div>
+        <button id="upload-background-button">Upload Background</button>
+        <input id="upload-background" type="file"/>
+      </div>
+    </div>
+    <div class="column">
+      <div>
         <label>
-          Select Background
+          Preset Background
           <select id="background-select">
             <!-- filled via JS -->
           </select>
@@ -84,7 +100,7 @@
     </div>
     <div class="column">
       <div>
-        <button id="save-button">Download Framed</button>
+        <button id="save-button">Download</button>
       </div>
     </div>
   </div>
@@ -102,6 +118,8 @@
     const elmBackgrounds = document.getElementById('background-select');
     const elmUploadFeatureButton = document.getElementById('upload-feature-button');
     const elmUploadFeature = document.getElementById('upload-feature');
+    const elmUploadBackgroundButton = document.getElementById('upload-background-button');
+    const elmUploadBackground = document.getElementById('upload-background');
     const elmSaveButton = document.getElementById('save-button');
     const elmSaveLink = document.getElementById("download-link");
     const elmCanvas = document.getElementById("canvas");
@@ -227,11 +245,9 @@
     }
     imgFeature.onload = paint;
     imgBackground.onload = paint;
+    window.addEventListener("resize", paint);
 
-    elmBackgrounds.addEventListener('change', e => {
-      const backgroundId = parseFloat(e.target.value);
-      loadBackground(backgroundId);
-    });
+    // upload feature
     elmUploadFeatureButton.addEventListener('click', e => {
       elmUploadFeature.click();
     });
@@ -243,12 +259,32 @@
       };
       reader.readAsDataURL(e1.target.files[0]);
     }, false);
+
+    // upload background
+    elmUploadBackgroundButton.addEventListener('click', e => {
+      elmUploadBackground.click();
+    });
+    elmUploadBackground.addEventListener('change', e1 => {
+      const reader = new FileReader;
+      reader.onload = e2 => {
+        const source = e2.target.result;
+        imgBackground.src = source;
+      };
+      reader.readAsDataURL(e1.target.files[0]);
+    }, false);
+
+    // select background
+    elmBackgrounds.addEventListener('change', e => {
+      const backgroundId = parseFloat(e.target.value);
+      loadBackground(backgroundId);
+    });
+
+    // save
     elmSaveButton.addEventListener('click', () => {
       const dt = elmCanvas.toDataURL("image/png");
       elmSaveLink.href = dt;
       elmSaveLink.click();
     });
-    window.addEventListener("resize", paint);
 
     // default image and frame
     imgFeature.src = 'example/joseph.jpg';
