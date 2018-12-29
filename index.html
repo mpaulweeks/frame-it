@@ -7,15 +7,22 @@
     html, body {
       width: 100%;
       margin: 0 auto;
-    }
-    input, button, select {
-      border: 1px solid black;
-    }
-    button, select {
       font-size: 20px;
     }
+    button, select {
+      border: 1px solid black;
+      font-size: 1rem;
+      cursor: pointer;
+      color: black;
+      background-color: white;
+    }
+    button:hover, select:hover {
+      color: white;
+      background-color: black;
+      cursor: pointer;
+    }
     input {
-      width: 100px;
+      display: none;
     }
     .row {
       width: 100%;
@@ -31,23 +38,10 @@
       flex-direction: column;
       justify-content: center;
     }
-    .input-container {
-      padding-bottom: 3px;
-    }
     .title {
       font-size: 24pt;
     }
 
-    #save-button {
-      font-size: 20px;
-      cursor: pointer;
-      color: black;
-      background-color: white;
-    }
-    #save-button:hover {
-      color: white;
-      background-color: black;
-    }
     #download-link {
       display: none;
     }
@@ -73,22 +67,24 @@
   <!-- interactive panel -->
   <div class="row">
     <div class="column">
-      <div> Select Background </div>
       <div>
-        <select id="background-select">
-          <!-- filled via JS -->
-        </select>
-      </div>
-    </div>
-    <div class="column">
-      <div> Upload Image </div>
-      <div>
-        <input id="file-upload" type="file"/>
+        <button id="upload-feature-button">Upload Image</button>
+        <input id="upload-feature" type="file"/>
       </div>
     </div>
     <div class="column">
       <div>
-        <button id="save-button">Save Image</button>
+        <label>
+          Select Background
+          <select id="background-select">
+            <!-- filled via JS -->
+          </select>
+        </label>
+      </div>
+    </div>
+    <div class="column">
+      <div>
+        <button id="save-button">Download Framed</button>
       </div>
     </div>
   </div>
@@ -104,13 +100,14 @@
   <script>
 
     const elmBackgrounds = document.getElementById('background-select');
-    const elmUpload = document.getElementById('file-upload');
+    const elmUploadFeatureButton = document.getElementById('upload-feature-button');
+    const elmUploadFeature = document.getElementById('upload-feature');
     const elmSaveButton = document.getElementById('save-button');
     const elmSaveLink = document.getElementById("download-link");
     const elmCanvas = document.getElementById("canvas");
     const ctx = elmCanvas.getContext("2d");
     const imgBackground = new Image();
-    const imgUpload = new Image();
+    const imgFeature = new Image();
 
     const backgrounds = [
       {
@@ -182,25 +179,25 @@
       elmCanvas.height = canvasHeight;
       ctx.drawImage(imgBackground, 0, 0, canvasWidth, canvasHeight);
 
-      // set uploaded image
-      let uploadHeight = Math.min(canvasHeight - bufferBackground, imgUpload.height);
-      let uploadWidth = imgUpload.width * (uploadHeight / imgUpload.height);
-      if (uploadWidth > canvasWidth - bufferBackground) {
-        uploadWidth = canvasWidth - bufferBackground;
-        uploadHeight = imgUpload.height * (uploadWidth / imgUpload.width);
+      // set featureed image
+      let featureHeight = Math.min(canvasHeight - bufferBackground, imgFeature.height);
+      let featureWidth = imgFeature.width * (featureHeight / imgFeature.height);
+      if (featureWidth > canvasWidth - bufferBackground) {
+        featureWidth = canvasWidth - bufferBackground;
+        featureHeight = imgFeature.height * (featureWidth / imgFeature.width);
       }
-      const borderTop = (canvasHeight / 2) - (uploadHeight / 2);
-      const borderBottom = borderTop + uploadHeight;
-      const borderCenterVertical = borderTop + (uploadHeight / 2);
-      const borderLeft = (canvasWidth / 2) - (uploadWidth / 2);
-      const borderRight = borderLeft + uploadWidth;
-      const borderCenterHorizontal = borderLeft + (uploadWidth / 2);
+      const borderTop = (canvasHeight / 2) - (featureHeight / 2);
+      const borderBottom = borderTop + featureHeight;
+      const borderCenterVertical = borderTop + (featureHeight / 2);
+      const borderLeft = (canvasWidth / 2) - (featureWidth / 2);
+      const borderRight = borderLeft + featureWidth;
+      const borderCenterHorizontal = borderLeft + (featureWidth / 2);
       ctx.drawImage(
-        imgUpload,
+        imgFeature,
         borderLeft,
         borderTop,
-        uploadWidth,
-        uploadHeight
+        featureWidth,
+        featureHeight
       );
 
       // frame filler
@@ -228,18 +225,21 @@
       paintFrame(frameParts.bottom_left, borderLeft, borderBottom);
       paintFrame(frameParts.bottom_right, borderRight, borderBottom);
     }
-    imgUpload.onload = paint;
+    imgFeature.onload = paint;
     imgBackground.onload = paint;
 
-    elmBackgrounds.addEventListener('change', () => {
-      const backgroundId = parseFloat(elmBackgrounds.value);
+    elmBackgrounds.addEventListener('change', e => {
+      const backgroundId = parseFloat(e.target.value);
       loadBackground(backgroundId);
     });
-    elmUpload.addEventListener('change', e1 => {
+    elmUploadFeatureButton.addEventListener('click', e => {
+      elmUploadFeature.click();
+    });
+    elmUploadFeature.addEventListener('change', e1 => {
       const reader = new FileReader;
       reader.onload = e2 => {
         const source = e2.target.result;
-        imgUpload.src = source;
+        imgFeature.src = source;
       };
       reader.readAsDataURL(e1.target.files[0]);
     }, false);
@@ -251,7 +251,7 @@
     window.addEventListener("resize", paint);
 
     // default image and frame
-    imgUpload.src = 'example/joseph.jpg';
+    imgFeature.src = 'example/joseph.jpg';
     loadBackground(0);
 
   </script>
