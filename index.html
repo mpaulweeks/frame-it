@@ -4,24 +4,28 @@
   <link rel="shortcut icon" href="favicon.png" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-    html, body {
+    html,
+    body {
       width: 100%;
       margin: 0 auto;
       font-size: 18px;
     }
-    button, select {
+    button,
+    select {
       border: 1px solid black;
       font-size: 1rem;
       cursor: pointer;
       color: black;
       background-color: white;
     }
-    button:hover, select:hover {
+    button:hover,
+    select:hover {
       color: white;
       background-color: black;
       cursor: pointer;
     }
-    input {
+    input[type="file"],
+    #download-link {
       display: none;
     }
     .row {
@@ -47,10 +51,6 @@
     }
     .author {
       font-size: 0.8rem;
-    }
-
-    #download-link {
-      display: none;
     }
 
     #canvas {
@@ -192,6 +192,27 @@
       };
       paint();
     }
+    function download(){
+      // adapted from https://stackoverflow.com/a/37151835
+      function dataURIToBlob(dataURI) {
+        var binStr = atob(dataURI.split(',')[1]),
+          len = binStr.length,
+          arr = new Uint8Array(len);
+
+        for (var i = 0; i < len; i++) {
+          arr[i] = binStr.charCodeAt(i);
+        }
+
+        return new Blob([arr]);
+      }
+
+      const dataURI = elmCanvas.toDataURL("image/png");
+      const blob = dataURIToBlob(dataURI);
+      const objectURI = URL.createObjectURL(blob);
+      elmSaveLink.href = objectURI;
+      elmSaveLink.click();
+    }
+
     function paintFrame(frameImg, x, y){
       const width = frameImg.width * currentFrameSize.ratio;
       const height = frameImg.height * currentFrameSize.ratio;
@@ -311,9 +332,7 @@
 
     // save
     elmSaveButton.addEventListener('click', () => {
-      const dt = elmCanvas.toDataURL("image/png");
-      elmSaveLink.href = dt;
-      elmSaveLink.click();
+      download();
     });
 
     // default image and frame
