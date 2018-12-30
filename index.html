@@ -100,6 +100,16 @@
     </div>
     <div class="column">
       <div>
+        <label>
+          Frame Size
+          <select id="select-frame-size">
+            <!-- filled via JS -->
+          </select>
+        </label>
+      </div>
+    </div>
+    <div class="column">
+      <div>
         <button id="save-button">Download</button>
       </div>
     </div>
@@ -115,7 +125,8 @@
 
   <script>
 
-    const elmBackgrounds = document.getElementById('background-select');
+    const elmSelectFrameSize = document.getElementById('select-frame-size');
+    const elmSelectBackground = document.getElementById('background-select');
     const elmUploadFeatureButton = document.getElementById('upload-feature-button');
     const elmUploadFeature = document.getElementById('upload-feature');
     const elmUploadBackgroundButton = document.getElementById('upload-background-button');
@@ -127,6 +138,13 @@
     const imgBackground = new Image();
     const imgFeature = new Image();
 
+    // frameSizes
+    [4, 3, 2, 1].forEach(size => {
+      const name = (size * 25) + '%';
+      const ratio = size / 4;
+      elmSelectFrameSize.innerHTML += `<option value="${ratio}">${name}</option>`;
+    });
+    let currentFrameSize = undefined;
     const backgrounds = [
       {
         source: 'background/dark.png',
@@ -138,9 +156,8 @@
       },
     ];
     backgrounds.forEach((bg, bid) => {
-      elmBackgrounds.innerHTML += `<option value="${bid}">${bg.name}</option>`;
+      elmSelectBackground.innerHTML += `<option value="${bid}">${bg.name}</option>`;
     });
-    let currentBackground = null;
 
     const frameParts = [
       'bottom_left',
@@ -163,15 +180,20 @@
       return obj;
     }, {});
 
-
-    const frameSize = 0.5;
     function loadBackground(backgroundId){
-      currentFrame = backgrounds[backgroundId];
-      imgBackground.src = currentFrame.source;
+      imgBackground.src = backgrounds[backgroundId].source;
+    }
+    function loadFrameSize(){
+      const ratio = parseFloat(elmSelectFrameSize.value);
+      currentFrameSize = {
+        ratio: ratio,
+        px: 92 * ratio,
+      };
+      paint();
     }
     function paintFrame(frameImg, x, y){
-      const width = frameImg.width * frameSize;
-      const height = frameImg.height * frameSize;
+      const width = frameImg.width * currentFrameSize.ratio;
+      const height = frameImg.height * currentFrameSize.ratio;
       ctx.drawImage(
         frameImg,
         x - (width / 2),
@@ -181,13 +203,15 @@
       );
     }
     function paint() {
+      if (!currentFrameSize) {
+        return;
+      }
       if (!frameParts.filler_top.width){
         return;
       }
 
-      const fillerSize = frameParts.filler_top.width * frameSize;
       const bufferPage = 50;
-      const bufferBackground = fillerSize * 10;
+      const bufferBackground = currentFrameSize.px * 3;
 
       // set bg
       const windowWidth = document.body.clientWidth - bufferPage;
@@ -220,7 +244,7 @@
 
       // frame filler
       if (frameParts.filler_top.width){
-        const fillerSize = frameParts.filler_top.width * frameSize;
+        const fillerSize = frameParts.filler_top.width * currentFrameSize.ratio;
         for (let x = borderLeft; x < borderRight; x += fillerSize){
           paintFrame(frameParts.filler_top, x, borderTop);
           paintFrame(frameParts.filler_bottom, x, borderBottom);
@@ -274,9 +298,14 @@
     }, false);
 
     // select background
-    elmBackgrounds.addEventListener('change', e => {
+    elmSelectBackground.addEventListener('change', e => {
       const backgroundId = parseFloat(e.target.value);
       loadBackground(backgroundId);
+    });
+
+    // select currentFrameSize.ratio
+    elmSelectFrameSize.addEventListener('change', e => {
+      loadFrameSize();
     });
 
     // save
@@ -289,6 +318,7 @@
     // default image and frame
     imgFeature.src = 'example/joseph.jpg';
     loadBackground(0);
+    loadFrameSize();
 
   </script>
 </body>
