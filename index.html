@@ -157,13 +157,36 @@
     const backgrounds = [
       {
         source: 'background/dark.png',
-        name: 'Dark',
+        name: 'dark',
       },
       {
         source: 'background/clouds.jpg',
-        name: 'Clouds',
+        name: 'clouds',
       },
-    ];
+      {
+        source: 'background/birds.jpg',
+        name: 'birds',
+      },
+      {
+        source: 'background/flowers_blue.jpg',
+        name: 'flowers (blue)',
+      },
+      {
+        source: 'background/flowers_pink.png',
+        name: 'flowers (pink)',
+      },
+      {
+        source: 'background/spooky.jpg',
+        name: 'spooky',
+      },
+      {
+        source: 'background/tunnel.jpg',
+        name: 'tunnel',
+      },
+    ].map((bg, i) => {
+      bg.id = i;
+      return bg;
+    });
     backgrounds.forEach((bg, bid) => {
       elmSelectBackground.innerHTML += `<option value="${bid}">${bg.name}</option>`;
     });
@@ -190,7 +213,9 @@
     }, {});
 
     function loadBackground(backgroundId){
-      imgBackground.src = backgrounds[backgroundId].source;
+      const bg = backgrounds[backgroundId];
+      imgBackground.src = bg.source;
+      elmSelectBackground.value = bg.id;
     }
     function loadFrameSize(){
       const ratio = parseFloat(elmSelectFrameSize.value);
@@ -344,8 +369,14 @@
     });
 
     // default image and frame
-    imgFeature.src = 'example/joseph.jpg';
-    loadBackground(0);
+    const exampleFeatures = [
+      'joseph.jpg',
+      'rohan.png',
+      'treachery.png',
+      'wowee.jpg',
+    ].map(src => `example/${src}`);
+    imgFeature.src = exampleFeatures[Math.floor(Math.random()*exampleFeatures.length)];
+    loadBackground(Math.floor(Math.random()*backgrounds.length));
     loadFrameSize();
 
   </script>
