@@ -225,7 +225,7 @@
       };
       paint();
     }
-    function download(){
+    function download(canvas){
       // adapted from https://stackoverflow.com/a/37151835
       function dataURIToBlob(dataURI) {
         var binStr = atob(dataURI.split(',')[1]),
@@ -239,7 +239,7 @@
         return new Blob([arr]);
       }
 
-      const dataURI = elmCanvas.toDataURL("image/png");
+      const dataURI = canvas.toDataURL("image/png");
       const blob = dataURIToBlob(dataURI);
       const objectURI = URL.createObjectURL(blob);
       elmSaveLink.href = objectURI;
@@ -365,7 +365,7 @@
 
     // save
     elmSaveButton.addEventListener('click', () => {
-      download();
+      download(elmCanvas);
     });
 
     // default image and frame
