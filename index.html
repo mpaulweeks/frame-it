@@ -27,6 +27,10 @@
       color: black;
       background-color: white;
     }
+    button,
+    input {
+      text-align: center;
+    }
     button:hover,
     select:hover {
       color: white;
@@ -49,7 +53,7 @@
       justify-content: center;
     }
     .column {
-      margin: 5px;
+      margin: 0.3rem;
       display: flex;
       flex-direction: column;
       justify-content: center;
@@ -63,7 +67,6 @@
 
     #input-buffer {
       width: 3rem;
-      text-align: center;
     }
 
     #info {
@@ -83,13 +86,6 @@
     @media (max-width: 400px) {
       html {
         font-size: 16px;
-      }
-      .column {
-        text-align: center;
-        width: auto;
-        height: auto;
-        max-width: 100%;
-        padding-bottom: 10px;
       }
       #canvas-result {
         max-width: 100%;
@@ -136,7 +132,7 @@
     <div class="column">
       <div>
         <label>
-          Frame:
+          Frame Size:
           <select id="select-frame-size">
             <!-- filled via JS -->
           </select>
@@ -146,7 +142,7 @@
     <div class="column">
       <div>
         <label>
-          Area around frame:
+          Area Around Frame:
           <input type="text" id="input-buffer" value="100" />
           px
         </label>
@@ -169,10 +165,10 @@
   <!-- canvas -->
   <div class="row">
     <img id="canvas-result" src="" />
-    <canvas id="canvas"></canvas>
   </div>
 
-  <!-- hidden download link -->
+  <!-- hidden elements -->
+  <canvas id="canvas"></canvas>
   <a id="download-link" download="framed.png"></a>
 
   <script>
@@ -201,7 +197,7 @@
     const frameSizes = [4, 3, 2, 1].map(size => {
       const ratio = size / 4;
       return {
-        name: (size * 25) + 'px',
+        name: (size * 25) + '%',
         ratio: ratio,
         px: 92 * ratio,
       };
@@ -210,6 +206,13 @@
       elmSelectFrameSize.innerHTML += `<option value="${f.ratio}">${f.name}</option>`;
     });
     let currentFrameSize = undefined;
+
+    // frame buffer
+    let maxBuffer = 1000;
+    let defaultBuffer = parseFloat(elmInputBuffer.value);
+    let currentUserBuffer = defaultBuffer;
+
+    // provided backgrounds
     const backgrounds = [
       {
         source: 'background/dark.png',
@@ -262,11 +265,12 @@
       'top_middle',
     ].reduce((obj, name) => {
       const img = new Image();
-      img.onload = paint;
+      img.onload = tryPaint;
       img.src = `frames/${name}.png`;
       obj[name] = img;
       return obj;
     }, {});
+    const allImages = Object.keys(frameParts).map(key => frameParts[key]).concat([imgFeature, imgBackground]);
 
     function loadBackground(backgroundId){
       const bg = backgrounds[backgroundId];
@@ -276,8 +280,35 @@
     function loadFrameSize(){
       const ratio = parseFloat(elmSelectFrameSize.value);
       currentFrameSize = frameSizes.filter(f => f.ratio === ratio)[0];
-      paint();
+      tryPaint();
     }
+    function loadBuffer(){
+      const buffer = parseFloat(elmInputBuffer.value);
+      if (isNaN(buffer)){
+        currentUserBuffer = defaultBuffer;
+      } else {
+        currentUserBuffer = buffer;
+        if (currentUserBuffer > maxBuffer) {
+          currentUserBuffer = maxBuffer;
+          elmInputBuffer.value = currentUserBuffer;
+        }
+      }
+      tryPaint();
+    }
+    function updateInfo(loading){
+      let info = '???';
+      if (loading || canvasWidth === undefined) {
+        info = 'loading, please wait...';
+      } else if (canvasWidth > document.body.clientWidth * 0.9){
+        // width * 0.9 to match CSS
+        info = 'Note: this is scaled to fit your display. Click Download for the best quality.';
+      } else {
+        info = '';
+      }
+      elmInfo.innerHTML = info;
+    }
+
+    // painting
     function previewResult(){
       // adapted from https://stackoverflow.com/a/37151835
       function dataURIToBlob(dataURI) {
@@ -296,23 +327,23 @@
       const blob = dataURIToBlob(dataURI);
       const objectURI = URL.createObjectURL(blob);
       elmCanvasResult.src = objectURI;
-
-      let info = '???';
-      if (canvasWidth === undefined) {
-        info = 'loading, please wait...';
-      } else if (canvasWidth > document.body.clientWidth * 0.9){
-        // width * 0.9 to match CSS
-        info = 'Note: this is scaled to fit your display. Click Download for the best quality.';
-      } else {
-        info = '';
-      }
-      elmInfo.innerHTML = info;
+      updateInfo(false);
     }
     function download(){
       elmSaveLink.href = elmCanvasResult.src;
       elmSaveLink.click();
     }
-
+    function tryPaint(){
+      updateInfo(true);
+      if (!currentFrameSize) {
+        return;
+      }
+      const loaded = allImages.every(img => !!img.width);
+      if (!loaded) {
+        return;
+      }
+      setTimeout(() => paintFull(), 0);
+    }
     function paintFrame(frameImg, x, y){
       const width = frameImg.width * currentFrameSize.ratio;
       const height = frameImg.height * currentFrameSize.ratio;
@@ -324,16 +355,8 @@
         height
       );
     }
-    function paint() {
-      if (!currentFrameSize) {
-        return;
-      }
-      if (!frameParts.filler_top.width){
-        return;
-      }
-
-      const userBuffer = parseFloat(elmInputBuffer.value) || 0;
-      const bufferBackground = (currentFrameSize.px * 2) + userBuffer;
+    function paintFull() {
+      const bufferBackground = (currentFrameSize.px * 2) + currentUserBuffer;
 
       // determine image native size
       const featureHeight = imgFeature.height;
@@ -395,9 +418,11 @@
       // paint to previewResult
       previewResult();
     }
-    imgFeature.onload = paint;
-    imgBackground.onload = paint;
-    window.addEventListener("resize", paint);
+
+    // listeners
+    imgFeature.onload = tryPaint;
+    imgBackground.onload = tryPaint;
+    window.addEventListener("resize", tryPaint);
 
     // upload feature
     elmUploadFeatureButton.addEventListener('click', e => {
@@ -432,15 +457,11 @@
     });
 
     // select currentFrameSize.ratio
-    elmSelectFrameSize.addEventListener('change', e => {
-      loadFrameSize();
-    });
-    elmInputBuffer.addEventListener('input', e => paint());
+    elmSelectFrameSize.addEventListener('change', e => loadFrameSize());
+    elmInputBuffer.addEventListener('input', e => loadBuffer());
 
     // save
-    elmSaveButton.addEventListener('click', () => {
-      download(elmCanvas);
-    });
+    elmSaveButton.addEventListener('click', e => download());
 
     // default image and frame
     const exampleFeatures = [
