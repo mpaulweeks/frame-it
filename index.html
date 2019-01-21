@@ -19,7 +19,8 @@
       font-size: 18px;
     }
     button,
-    select {
+    select,
+    input {
       border: 1px solid black;
       font-size: 1rem;
       cursor: pointer;
@@ -58,6 +59,11 @@
     }
     .author {
       font-size: 0.8rem;
+    }
+
+    #input-buffer {
+      width: 3rem;
+      text-align: center;
     }
 
     #info {
@@ -118,8 +124,20 @@
     <div class="column">
       <div>
         <label>
-          Preset Background
+          Preset Background:
           <select id="background-select">
+            <!-- filled via JS -->
+          </select>
+        </label>
+      </div>
+    </div>
+  </div>
+  <div class="row input-row flex">
+    <div class="column">
+      <div>
+        <label>
+          Frame:
+          <select id="select-frame-size">
             <!-- filled via JS -->
           </select>
         </label>
@@ -128,10 +146,9 @@
     <div class="column">
       <div>
         <label>
-          Frame Size
-          <select id="select-frame-size">
-            <!-- filled via JS -->
-          </select>
+          Area around frame:
+          <input type="text" id="input-buffer" value="100" />
+          px
         </label>
       </div>
     </div>
@@ -161,6 +178,7 @@
   <script>
 
     const elmSelectFrameSize = document.getElementById('select-frame-size');
+    const elmInputBuffer = document.getElementById('input-buffer');
     const elmSelectBackground = document.getElementById('background-select');
     const elmUploadFeatureButton = document.getElementById('upload-feature-button');
     const elmUploadFeature = document.getElementById('upload-feature');
@@ -180,10 +198,16 @@
     let canvasHeight = undefined;
 
     // frameSizes
-    [4, 3, 2, 1].forEach(size => {
-      const name = (size * 25) + '%';
+    const frameSizes = [4, 3, 2, 1].map(size => {
       const ratio = size / 4;
-      elmSelectFrameSize.innerHTML += `<option value="${ratio}">${name}</option>`;
+      return {
+        name: (size * 25) + 'px',
+        ratio: ratio,
+        px: 92 * ratio,
+      };
+    });
+    frameSizes.forEach(f => {
+      elmSelectFrameSize.innerHTML += `<option value="${f.ratio}">${f.name}</option>`;
     });
     let currentFrameSize = undefined;
     const backgrounds = [
@@ -251,10 +275,7 @@
     }
     function loadFrameSize(){
       const ratio = parseFloat(elmSelectFrameSize.value);
-      currentFrameSize = {
-        ratio: ratio,
-        px: 92 * ratio,
-      };
+      currentFrameSize = frameSizes.filter(f => f.ratio === ratio)[0];
       paint();
     }
     function previewResult(){
@@ -280,6 +301,7 @@
       if (canvasWidth === undefined) {
         info = 'loading, please wait...';
       } else if (canvasWidth > document.body.clientWidth * 0.9){
+        // width * 0.9 to match CSS
         info = 'Note: this is scaled to fit your display. Click Download for the best quality.';
       } else {
         info = '';
@@ -310,8 +332,8 @@
         return;
       }
 
-      const bufferPage = 50;
-      const bufferBackground = currentFrameSize.px * 3;
+      const userBuffer = parseFloat(elmInputBuffer.value) || 0;
+      const bufferBackground = (currentFrameSize.px * 2) + userBuffer;
 
       // determine image native size
       const featureHeight = imgFeature.height;
@@ -413,6 +435,7 @@
     elmSelectFrameSize.addEventListener('change', e => {
       loadFrameSize();
     });
+    elmInputBuffer.addEventListener('input', e => paint());
 
     // save
     elmSaveButton.addEventListener('click', () => {
