@@ -64,9 +64,9 @@
     .author {
       font-size: 0.8rem;
     }
-
-    #input-buffer {
+    .input-number {
       width: 3rem;
+      margin-right: -0.2rem;
     }
 
     #info {
@@ -139,15 +139,28 @@
         </label>
       </div>
     </div>
+  </div>
+  <div class="row input-row flex">
     <div class="column">
       <div>
         <label>
-          Area Around Frame:
-          <input type="text" id="input-buffer" value="100" />
+          Space Above/Below the Frame:
+          <input type="text" value="100" class="input-number" id="input-buffer-vertical" />
           px
         </label>
       </div>
     </div>
+    <div class="column">
+      <div>
+        <label>
+          Space Left/Right of the Frame:
+          <input type="text" value="100" class="input-number" id="input-buffer-horizontal" />
+          px
+        </label>
+      </div>
+    </div>
+  </div>
+  <div class="row input-row flex">
     <div class="column">
       <div>
         <button id="save-button">Download</button>
@@ -174,7 +187,8 @@
   <script>
 
     const elmSelectFrameSize = document.getElementById('select-frame-size');
-    const elmInputBuffer = document.getElementById('input-buffer');
+    const elmInputBufferVertical = document.getElementById('input-buffer-vertical');
+    const elmInputBufferHorizontal = document.getElementById('input-buffer-horizontal');
     const elmSelectBackground = document.getElementById('background-select');
     const elmUploadFeatureButton = document.getElementById('upload-feature-button');
     const elmUploadFeature = document.getElementById('upload-feature');
@@ -194,7 +208,7 @@
     let canvasHeight = undefined;
 
     // frameSizes
-    const frameSizes = [4, 3, 2, 1].map(size => {
+    const frameSizes = [4, 3, 2, 1, 0].map(size => {
       const ratio = size / 4;
       return {
         name: (size * 25) + '%',
@@ -209,8 +223,9 @@
 
     // frame buffer
     let maxBuffer = 1000;
-    let defaultBuffer = parseFloat(elmInputBuffer.value);
-    let currentUserBuffer = defaultBuffer;
+    let defaultBuffer = parseFloat(elmInputBufferVertical.value);
+    let userBufferVertical = defaultBuffer;
+    let userBufferHorizontal = defaultBuffer;
 
     // provided backgrounds
     const backgrounds = [
@@ -275,14 +290,24 @@
       tryPaint();
     }
     function loadBuffer(){
-      const buffer = parseFloat(elmInputBuffer.value);
-      if (isNaN(buffer)){
-        currentUserBuffer = defaultBuffer;
+      const bufferVertical = parseFloat(elmInputBufferVertical.value);
+      if (isNaN(bufferVertical)){
+        userBufferVertical = defaultBuffer;
       } else {
-        currentUserBuffer = buffer;
-        if (currentUserBuffer > maxBuffer) {
-          currentUserBuffer = maxBuffer;
-          elmInputBuffer.value = currentUserBuffer;
+        userBufferVertical = bufferVertical;
+        if (userBufferVertical > maxBuffer) {
+          userBufferVertical = maxBuffer;
+          elmInputBufferVertical.value = userBufferVertical;
+        }
+      }
+      const bufferHorizontal = parseFloat(elmInputBufferHorizontal.value);
+      if (isNaN(bufferHorizontal)){
+        userBufferHorizontal = defaultBuffer;
+      } else {
+        userBufferHorizontal = bufferHorizontal;
+        if (userBufferHorizontal > maxBuffer) {
+          userBufferHorizontal = maxBuffer;
+          elmInputBufferHorizontal.value = userBufferHorizontal;
         }
       }
       tryPaint();
@@ -339,26 +364,29 @@
     function paintFrame(frameImg, x, y){
       const width = frameImg.width * currentFrameSize.ratio;
       const height = frameImg.height * currentFrameSize.ratio;
-      ctx.drawImage(
-        frameImg,
-        x - (width / 2),
-        y - (height / 2),
-        width,
-        height
-      );
+      if (width > 0 && height > 0){
+        ctx.drawImage(
+          frameImg,
+          x - (width / 2),
+          y - (height / 2),
+          width,
+          height
+        );
+      }
     }
     function paintFull() {
-      const bufferBackground = (currentFrameSize.px * 2) + currentUserBuffer;
+      const bufferVertical = 2*(currentFrameSize.px + userBufferVertical);
+      const bufferHorizontal = 2*(currentFrameSize.px + userBufferHorizontal);
 
       // determine image native size
       const featureHeight = imgFeature.height;
       const featureWidth = imgFeature.width;
 
       // determine background size
-      canvasHeight = featureHeight + bufferBackground;
+      canvasHeight = featureHeight + bufferVertical;
       canvasWidth = imgBackground.width * (canvasHeight / imgBackground.height);
-      if (canvasWidth < featureWidth + bufferBackground){
-        canvasWidth = featureWidth + bufferBackground;
+      if (canvasWidth < featureWidth + bufferHorizontal){
+        canvasWidth = featureWidth + bufferHorizontal;
         canvasHeight = imgBackground.height * (canvasWidth / imgBackground.width);
       }
 
@@ -385,13 +413,15 @@
       // frame filler
       if (frameParts.filler_top.width){
         const fillerSize = frameParts.filler_top.width * currentFrameSize.ratio;
-        for (let x = borderLeft; x < borderRight; x += fillerSize){
-          paintFrame(frameParts.filler_top, x, borderTop);
-          paintFrame(frameParts.filler_bottom, x, borderBottom);
-        }
-        for (let y = borderTop; y < borderBottom; y += fillerSize){
-          paintFrame(frameParts.filler_left, borderLeft, y);
-          paintFrame(frameParts.filler_right, borderRight, y);
+        if (fillerSize > 0){
+          for (let x = borderLeft; x < borderRight; x += fillerSize){
+            paintFrame(frameParts.filler_top, x, borderTop);
+            paintFrame(frameParts.filler_bottom, x, borderBottom);
+          }
+          for (let y = borderTop; y < borderBottom; y += fillerSize){
+            paintFrame(frameParts.filler_left, borderLeft, y);
+            paintFrame(frameParts.filler_right, borderRight, y);
+          }
         }
       }
 
@@ -450,7 +480,8 @@
 
     // select currentFrameSize.ratio
     elmSelectFrameSize.addEventListener('change', e => loadFrameSize());
-    elmInputBuffer.addEventListener('input', e => loadBuffer());
+    elmInputBufferVertical.addEventListener('input', e => loadBuffer());
+    elmInputBufferHorizontal.addEventListener('input', e => loadBuffer());
 
     // save
     elmSaveButton.addEventListener('click', e => download());
