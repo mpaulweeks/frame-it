@@ -60,6 +60,10 @@
       font-size: 0.8rem;
     }
 
+    #info {
+      font-style: italic;
+    }
+
     #canvas-result {
       display: block;
       margin: 0px auto;
@@ -82,7 +86,7 @@
         padding-bottom: 10px;
       }
       #canvas-result {
-        width: 100%;
+        max-width: 100%;
       }
     }
   </style>
@@ -138,6 +142,13 @@
     </div>
   </div>
 
+  <!-- image info -->
+  <div class="row">
+    <div class="column" id="info">
+      loading, please wait...
+    </div>
+  </div>
+
   <!-- canvas -->
   <div class="row">
     <img id="canvas-result" src="" />
@@ -157,11 +168,16 @@
     const elmUploadBackground = document.getElementById('upload-background');
     const elmSaveButton = document.getElementById('save-button');
     const elmSaveLink = document.getElementById('download-link');
+    const elmInfo = document.getElementById('info');
     const elmCanvas = document.getElementById('canvas');
     const elmCanvasResult = document.getElementById('canvas-result');
     const ctx = elmCanvas.getContext("2d");
     const imgBackground = new Image();
     const imgFeature = new Image();
+
+    // define ahead of time for re-checking
+    let canvasWidth = undefined;
+    let canvasHeight = undefined;
 
     // frameSizes
     [4, 3, 2, 1].forEach(size => {
@@ -259,6 +275,16 @@
       const blob = dataURIToBlob(dataURI);
       const objectURI = URL.createObjectURL(blob);
       elmCanvasResult.src = objectURI;
+
+      let info = '???';
+      if (canvasWidth === undefined) {
+        info = 'loading, please wait...';
+      } else if (canvasWidth > document.body.clientWidth * 0.9){
+        info = 'Note: this is scaled to fit your display. Click Download for the best quality.';
+      } else {
+        info = '';
+      }
+      elmInfo.innerHTML = info;
     }
     function download(){
       elmSaveLink.href = elmCanvasResult.src;
@@ -292,8 +318,8 @@
       const featureWidth = imgFeature.width;
 
       // determine background size
-      let canvasHeight = featureHeight + bufferBackground;
-      let canvasWidth = imgBackground.width * (canvasHeight / imgBackground.height);
+      canvasHeight = featureHeight + bufferBackground;
+      canvasWidth = imgBackground.width * (canvasHeight / imgBackground.height);
       if (canvasWidth < featureWidth + bufferBackground){
         canvasWidth = featureWidth + bufferBackground;
         canvasHeight = imgBackground.height * (canvasWidth / imgBackground.width);
