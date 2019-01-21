@@ -38,7 +38,6 @@
     }
     .row {
       width: 100%;
-      padding: 5px;
       margin: 0.5em 0px;
       text-align: center;
     }
@@ -49,7 +48,7 @@
       justify-content: center;
     }
     .column {
-      padding: 0px 10px;
+      margin: 5px;
       display: flex;
       flex-direction: column;
       justify-content: center;
@@ -64,15 +63,22 @@
     #canvas-result {
       display: block;
       margin: 0px auto;
+      width: 90%;
     }
     #canvas {
       display: none;
     }
     @media (max-width: 400px) {
+      html {
+        font-size: 16px;
+      }
       .column {
         text-align: center;
         width: 100%;
         padding-bottom: 10px;
+      }
+      #canvas-result {
+        width: 100%;
       }
     }
   </style>
@@ -88,7 +94,7 @@
   </div>
 
   <!-- interactive panel -->
-  <div class="row flex">
+  <div class="row input-row flex">
     <div class="column">
       <div>
         <button id="upload-feature-button">Upload Image</button>
@@ -231,7 +237,7 @@
       };
       paint();
     }
-    function download(canvas){
+    function previewResult(){
       // adapted from https://stackoverflow.com/a/37151835
       function dataURIToBlob(dataURI) {
         var binStr = atob(dataURI.split(',')[1]),
@@ -245,10 +251,13 @@
         return new Blob([arr]);
       }
 
-      const dataURI = canvas.toDataURL("image/png");
+      const dataURI = elmCanvas.toDataURL("image/png");
       const blob = dataURIToBlob(dataURI);
       const objectURI = URL.createObjectURL(blob);
-      elmSaveLink.href = objectURI;
+      elmCanvasResult.src = objectURI;
+    }
+    function download(){
+      elmSaveLink.href = elmCanvasResult.src;
       elmSaveLink.click();
     }
 
@@ -274,21 +283,24 @@
       const bufferPage = 50;
       const bufferBackground = currentFrameSize.px * 3;
 
-      // set bg
-      const windowWidth = document.body.clientWidth - bufferPage;
-      const canvasWidth = Math.min(windowWidth, imgBackground.width);
-      const canvasHeight = imgBackground.height * (canvasWidth / imgBackground.width);
+      // determine image native size
+      const featureHeight = imgFeature.height;
+      const featureWidth = imgFeature.width;
+
+      // determine background size
+      let canvasHeight = featureHeight + bufferBackground;
+      let canvasWidth = imgBackground.width * (canvasHeight / imgBackground.height);
+      if (canvasWidth < featureWidth + bufferBackground){
+        canvasWidth = featureWidth + bufferBackground;
+        canvasHeight = imgBackground.height * (canvasWidth / imgBackground.width);
+      }
+
+      // draw background
       elmCanvas.width = canvasWidth;
       elmCanvas.height = canvasHeight;
       ctx.drawImage(imgBackground, 0, 0, canvasWidth, canvasHeight);
 
-      // set featureed image
-      let featureHeight = Math.min(canvasHeight - bufferBackground, imgFeature.height);
-      let featureWidth = imgFeature.width * (featureHeight / imgFeature.height);
-      if (featureWidth > canvasWidth - bufferBackground) {
-        featureWidth = canvasWidth - bufferBackground;
-        featureHeight = imgFeature.height * (featureWidth / imgFeature.width);
-      }
+      // draw feature
       const borderTop = (canvasHeight / 2) - (featureHeight / 2);
       const borderBottom = borderTop + featureHeight;
       const borderCenterVertical = borderTop + (featureHeight / 2);
@@ -327,6 +339,9 @@
       paintFrame(frameParts.top_right, borderRight, borderTop);
       paintFrame(frameParts.bottom_left, borderLeft, borderBottom);
       paintFrame(frameParts.bottom_right, borderRight, borderBottom);
+
+      // paint to previewResult
+      previewResult();
     }
     imgFeature.onload = paint;
     imgBackground.onload = paint;
