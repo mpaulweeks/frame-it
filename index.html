@@ -61,10 +61,14 @@
       font-size: 0.8rem;
     }
 
-    #canvas {
+    #canvas-result {
+      display: block;
       margin: 0px auto;
     }
-    @media (max-width: 400px){
+    #canvas {
+      display: none;
+    }
+    @media (max-width: 400px) {
       .column {
         text-align: center;
         width: 100%;
@@ -88,13 +92,13 @@
     <div class="column">
       <div>
         <button id="upload-feature-button">Upload Image</button>
-        <input id="upload-feature" type="file"/>
+        <input id="upload-feature" type="file" />
       </div>
     </div>
     <div class="column">
       <div>
         <button id="upload-background-button">Upload Background</button>
-        <input id="upload-background" type="file"/>
+        <input id="upload-background" type="file" />
       </div>
     </div>
     <div class="column">
@@ -126,6 +130,7 @@
 
   <!-- canvas -->
   <div class="row">
+    <img id="canvas-result" src="" />
     <canvas id="canvas"></canvas>
   </div>
 
@@ -141,8 +146,9 @@
     const elmUploadBackgroundButton = document.getElementById('upload-background-button');
     const elmUploadBackground = document.getElementById('upload-background');
     const elmSaveButton = document.getElementById('save-button');
-    const elmSaveLink = document.getElementById("download-link");
-    const elmCanvas = document.getElementById("canvas");
+    const elmSaveLink = document.getElementById('download-link');
+    const elmCanvas = document.getElementById('canvas');
+    const elmCanvasResult = document.getElementById('canvas-result');
     const ctx = elmCanvas.getContext("2d");
     const imgBackground = new Image();
     const imgFeature = new Image();
